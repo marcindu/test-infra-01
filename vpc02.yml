@@ -1,9 +1,15 @@
 # Create VPC for Application02
 
 ---
+
+#
+# Header from AWS services
+#
 - name: Create VPC for App02
   hosts: localhost
   connection: local
+  gather_facts: False
+  
   vars:
     access_key: eu-central-1.admin
     cidr_all: 10.16.0.0/16
