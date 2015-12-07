@@ -10,8 +10,8 @@
     aws_region: eu-central-1
     
   tasks:
-    - ec2_vpc:
-        name: Virtual Private Cloud
+    - name: Virtual Private Cloud
+      ec2_vpc:
         region: "{{ aws_region }}"
         cidr_block: "{{ cidr_all }}"
         state: present
