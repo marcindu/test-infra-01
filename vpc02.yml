@@ -1,0 +1,41 @@
+# Create VPC for Application02
+
+---
+- name: Create VPC for App02
+  hosts: localhost
+  vars:
+    access_key: eu-central-1.admin
+    cidr_all: 10.16.0.0/16
+    aws_region: eu-central-1
+    
+  tasks:
+    ec2_vpc:
+      name: Virtual Private Cloud
+      region: "{{ aws_region }}"
+      cidr_block: "{{ cidr_all }}"
+      state: present
+      internet_gateway: yes
+      resource_tags:
+        - Name: sys02-vpc
+        - Platform: Networking
+      
+      subnets:
+        - cidr: 10.16.1.0/24
+          az: eu-central-1a
+          resource_tags:
+            Name: sys02-sub-web-1a
+            Platform: Networking
+        - cidr: 10.16.2.0/24
+          az: eu-central-1b
+          resource_tags:
+            Name: sys02-sub-web-1b
+            Platform: Networking
+          
+      route_tables:
+        - subnets:
+          - 10.16.1.0/24
+          - 10.16.2.0/24
+          routes:
+            - dest: 0.0.0.0/0
+              gw: igw
+    register: vpc
