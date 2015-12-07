@@ -14,7 +14,7 @@
       ec2_vpc:
         region: "{{ aws_region }}"
         cidr_block: "{{ cidr_all }}"
-        state: present
+        state: absent
         internet_gateway: yes
         resource_tags: { "Name": "sys02-vpc", "Platform": "Networking" }
         
