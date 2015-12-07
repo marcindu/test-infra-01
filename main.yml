@@ -1,13 +1,13 @@
-Some very basic thing - add users
+# A very basic thing - add users
 
 ---
 - hosts: all
   remote_user: ec2-user
   sudo: yes
 
-- tasks:
-  name: Add new user
-  user:
-    name: testusr
-    state: present
-    ssh_key_file: ~\.ssh\marcindu.qa.admin.pem
+  tasks:
+    - name: Add new user
+    - user:
+        name: marcindu
+        state: present
+        ssh_key_file: ~/.ssh/marcindu.qa.admin.pem
