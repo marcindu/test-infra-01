@@ -3,23 +3,16 @@
 ---
 - hosts: localhost
   connection: local
-  gather_facts: no
+  gather_facts: False
   any_errors_fatal: true
 
   vars:
     env: qa
-    aws_region: eu-central-1
-    ws_vpc:
-      cidr_block: 192.168.16.0/20
-      ws_tier_a:
-        cidr_block: 192.168.17.0/24
-      ws_tier_b:
-        cidr_block: 192.168.25.0/24
-      db_tier_a:
-        cidr_block: 192.168.18.0/24
-      db_tier_b:
-        cidr_block: 192.168.26.0/24
   
+  vars_files:
+    - vars/var_workspaces.yml
+  
+    
   tasks:
     - name: VPC for Work Spaces
       ec2_vpc:
