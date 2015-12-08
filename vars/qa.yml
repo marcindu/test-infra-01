@@ -1,7 +1,7 @@
 ---
 env: qa
 aws_region: eu-central-1
-sys02_vpc:
+ws_vpc:
   cidr_block: 192.168.16.0/20
   - ws_tier_a:
     cidr_block: 192.168.17.0/24
