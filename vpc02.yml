@@ -26,10 +26,10 @@
         
         subnets:
           - cidr: 10.16.1.0/24
-            az: eu-central-1a
+            az: "{{ aws_region }}"a
             resource_tags: { "Name": "sys02-sub-web-1a", "Platform": "Networking" }
           - cidr: 10.16.2.0/24
-            az: eu-central-1b
+            az: "{{ aws_region }}"b
             resource_tags: { "Name": "sys02-sub-web-1b", "Platform": "Networking" }
             
         route_tables:
