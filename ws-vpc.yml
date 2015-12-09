@@ -3,7 +3,7 @@
 ---
 - hosts: localhost
   connection: local
-  gather_facts: False
+  gather_facts: false
   any_errors_fatal: true
 
   vars:
@@ -15,32 +15,26 @@
     
   tasks:
     - name: VPC for Work Spaces
-      ec2_vpc:
+      cloudformation:
         state: present
+        stack_name: WorkSpaces-VPC
         region: "{{ aws_region }}"
-        cidr_block: "{{ ws_vpc.cidr_block }}"
-        internet_gateway: yes
-        resource_tags: { "Name": "ws-vpc", "Platform": "Networking" }
-        
-        subnets:
-          - cidr: "{{ ws_vpc.ws_tier_a.cidr_block }}"
-            az: "{{ aws_region }}a"
-            resource_tags: { "Name": "ws-sub-ws-1a", "Platform": "Networking" }
-          - cidr: "{{ ws_vpc.ws_tier_b.cidr_block }}"
-            az: "{{ aws_region }}b"
-            resource_tags: { "Name": "ws-sub-ws-1b", "Platform": "Networking" }
-          - cidr: "{{ ws_vpc.db_tier_a.cidr_block }}"
-            az: "{{ aws_region }}a"
-            resource_tags: { "Name": "ws-sub-db-1a", "Platform": "Networking" }
-          - cidr: "{{ ws_vpc.db_tier_b.cidr_block }}"
-            az: "{{ aws_region }}b"
-            resource_tags: { "Name": "ws-sub-db-1b", "Platform": "Networking" }
-        
-        route_tables:
-          - subnets:
-            - "{{ ws_vpc.ws_tier_a.cidr_block }}"
-            - "{{ ws_vpc.ws_tier_b.cidr_block }}"
-            routes:
-              - dest: 0.0.0.0/0
-                gw: igw
+        template: cf/workspaces-aws-net.template
+        template_parameters:
+          AdminVpcId: "{{ admin_vpc_id }}"
+          AdminVpcCidr: "{{ admin_vpc_cidr }}"
+      register: ws_vpc
+    
+    
+    - debug:
+        msg: "{{ ws_vpc }}"
+    
+    
+    - debug: msg={{ ws_vpc.stack_outputs.VpcId }}
+    
+    
+    
+    
+
+
 
