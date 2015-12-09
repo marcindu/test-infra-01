@@ -1,0 +1,150 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Mappings": {
+    "CidrBlocks": {
+      "cidr": {
+        "AllVpc": "192.168.16.0/20",
+        "SubWs1a": "192.168.17.0/24",
+        "SubWs1b": "192.168.25.0/24",
+        "SubDb1a": "192.168.18.0/24",
+        "SubDb1b": "192.168.26.0/24"
+      }
+    }
+  },
+  "Resources": {
+    "WsVpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": { "Fn::FindInMap": [ "CidrBlocks", "cidr", "AllVpc" ] },
+        "EnableDnsSupport" : true,
+        "EnableDnsHostnames" : true,
+        "Tags": [ { "Key": "Name", "Value": "ws-vpc" } ]
+      }
+    },
+    "SubWs1a": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "WsVpc" },
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": { "Ref": "AWS::Region" } } ] },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrBlocks", "cidr", "SubWs1a" ] },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [ { "Key": "Name", "Value": "ws-sub-ws-1a" } ]
+      }
+    },
+    "SubWs1b": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": { "VpcId": { "Ref": "WsVpc" },
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": { "Ref": "AWS::Region" } } ] },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrBlocks", "cidr", "SubWs1b" ] },
+        "MapPublicIpOnLaunch": true,
+        "Tags": [ { "Key": "Name", "Value": "ws-sub-ws-1b" } ]
+      }
+    },
+    "SubDb1a": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "WsVpc" },
+        "AvailabilityZone": { "Fn::Select": [ "0", { "Fn::GetAZs": { "Ref": "AWS::Region" } } ] },
+        "CidrBlock": { "Fn::FindInMap": [ "CidrBlocks", "cidr", "SubDb1a" ] },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [ { "Key": "Name", "Value": "ws-sub-db-1a" } ]
+      }
+    },
+    "SubDb1b": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": { "Ref": "WsVpc" },
+        "AvailabilityZone": { "Fn::Select": [ "1", { "Fn::GetAZs": { "Ref": "AWS::Region" } } ]},
+        "CidrBlock": { "Fn::FindInMap": [ "CidrBlocks", "cidr", "SubDb1b" ] },
+        "MapPublicIpOnLaunch": false,
+        "Tags": [ { "Key": "Name", "Value": "ws-sub-db-1b" } ]
+      }
+    },
+    "Igw": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [ { "Key": "Name", "Value": "ws-igw" } ]
+      }
+    },
+    "VGWA1ICFI": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": { "Ref": "Igw" },
+        "VpcId": { "Ref": "WsVpc" }
+      }
+    },
+    "RTableWs": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": { "Ref": "WsVpc" },
+        "Tags": [ { "Key": "Name", "Value": "ws-rtb-ws" } ]
+      }
+    },
+    "RTE9J63": {
+      "Type": "AWS::EC2::Route",
+      "Properties": {
+        "RouteTableId": { "Ref": "RTableWs" },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": { "Ref": "Igw" }
+      }
+    },
+    "SgWs": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for WorkSpaces",
+        "VpcId": { "Ref": "WsVpc" },
+        "SecurityGroupIngress": [
+            {
+              "CidrIp": "10.24.0.0/16",
+              "FromPort": 22,
+              "ToPort": 22,
+              "IpProtocol": "tcp"
+            }
+          ],
+        "Tags": [ { "Key": "Name", "Value": "ws-sg-ws" } ]
+      }
+    },
+    "SgDb": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Security group for databases",
+        "VpcId": { "Ref": "WsVpc" },
+        "SecurityGroupIngress": [
+            {
+              "SourceSecurityGroupId": { "Ref": "SgWs" },
+              "FromPort": 1521,
+              "ToPort": 1521,
+              "IpProtocol": "tcp"
+            }
+          ],
+        "Tags": [ { "Key": "Name", "Value": "ws-sg-db" } ]
+      }
+    }
+  },
+  "Parameters": {
+    "AdminVpcId": {
+      "Description": "Administrative VPC ID",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "AdminVpcCidr": {
+      "Description": "Administrative VPC CIDR Block",
+      "Type": "String",
+      "AllowedPattern": "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$",
+      "Default": "172.16.0.0/20"
+    }
+  },
+  "Outputs": {
+    "VpcId": {
+      "Description": "WorkSpaces VPC ID",
+      "Value": { "Ref": "WsVpc" }
+    },
+    "VpcCidr": {
+      "Description": "WorkSpaces VPC CIDR Block",
+      "Value": { "Fn::GetAtt": [ "WsVpc", "CidrBlock" ] }
+    },
+    "WorkSpaceSecGrp": {
+      "Description": "Security Group Containing WorkSpaces",
+      "Value": { "Ref": "SgWs" }
+    }
+  }
+}
