@@ -1,0 +1,108 @@
+# Create VPC for Administrative VPC
+# =================================================
+# To create use command:
+#  ~$ ansible-playbook adm-vpc.yml
+#
+# To remove the stack:
+#  ~$ ansible-playbook adm-vpc.yml -e action=absent
+#
+
+---
+
+- name: Administrative VPC
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - vars/var_general.yml
+  
+  
+  
+  tasks:
+  
+  - name: Admin VPC - network
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-Net
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-001-net.template
+      template_parameters:
+        Environment: "{{ env }}"
+    register: adm_vpc_net
+    
+  - debug:
+      msg: "{{ adm_vpc_net }}"
+
+
+    
+  - name: Admin VPC - routing
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-Routing
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-002-routing.template
+      template_parameters:
+        VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        IgwAdmin:        "{{ adm_vpc_net.stack_outputs.Igw }}"
+        SubnetBastion1a: "{{ adm_vpc_net.stack_outputs.BastionSubnetA }}"
+        SubnetBastion1b: "{{ adm_vpc_net.stack_outputs.BastionSubnetB }}"
+        SubnetJenkins1a: "{{ adm_vpc_net.stack_outputs.JenkinsSubnetA }}"
+        SubnetJenkins1b: "{{ adm_vpc_net.stack_outputs.JenkinsSubnetB }}"
+        SubnetUtils1a:   "{{ adm_vpc_net.stack_outputs.SubnetUtilsA }}"
+        SubnetUtils1b:   "{{ adm_vpc_net.stack_outputs.SubnetUtilsB }}"
+    register: adm_vpc_routing
+    
+  - debug:
+      msg: "{{ adm_vpc_routing }}"
+
+
+
+  - name: Admin VPC - bastion hosts
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-Bastions
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-003-bastions.template
+      template_parameters:
+        VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        VpcAdminCidr:    "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+        SubnetBastion1a: "{{ adm_vpc_net.stack_outputs.BastionSubnetA }}"
+        SubnetBastion1b: "{{ adm_vpc_net.stack_outputs.BastionSubnetB }}"
+        KeyPair:         "{{ key_pair }}"
+    register: adm_vpc_bastions
+    
+  - debug:
+      msg: "{{ adm_vpc_bastions }}"
+
+
+
+  - name: Admin VPC - utility server 1
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-Utility1
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-004-util1.template
+      template_parameters:
+        VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        VpcAdminCidr:    "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+        SubnetUtilsA:    "{{ adm_vpc_net.stack_outputs.SubnetUtilsA }}"
+        BastionSecGroup: "{{ adm_vpc_bastions.stack_outputs.BastionSecGroup }}"
+        KeyPair:         "{{ key_pair }}"
+    register: adm_vpc_util1
+    
+  - debug:
+      msg: "{{ adm_vpc_util1 }}"
+
+
+
+
+
+
+
+
+
+
+
+
+    

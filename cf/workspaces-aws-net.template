@@ -137,7 +137,7 @@
     "VpcId": {
       "Description": "WorkSpaces VPC ID",
       "Value": { "Ref": "WsVpc" }
-    },
+    }, 
     "VpcCidr": {
       "Description": "WorkSpaces VPC CIDR Block",
       "Value": { "Fn::GetAtt": [ "WsVpc", "CidrBlock" ] }

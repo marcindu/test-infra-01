@@ -1,0 +1,105 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Admin VPC - utility server",
+  "Parameters" : {
+    "VpcAdmin" : {
+      "Description" : "VPC to contain the security group",
+      "Type" : "AWS::EC2::VPC::Id"
+    },
+    "VpcAdminCidr" : {
+      "Description" : "VPC CIDR Block",
+      "Type" : "String",
+      "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    },
+    "SubnetUtilsA" : {
+      "Description" : "Subnet for utilities 1a",
+      "Type" : "AWS::EC2::Subnet::Id"
+    },
+    "BastionSecGroup" : {
+      "Description" : "Security group for bastion hosts",
+      "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+    },
+    "KeyPair" : {
+      "Description" : "Key pair to access instances",
+      "Type" : "AWS::EC2::KeyPair::KeyName"
+    }
+  },
+  "Mappings" : {
+    "Amis" : {
+      "eu-west-1":    { "utility" : "ami-25158352" },
+      "eu-central-1": { "utility" : "ami-dafdcfc7" },
+      "us-east-1":    { "utility" : "ami-12663b7a" },
+      "us-west-2":    { "utility" : "ami-4dbf9e7d"}
+    }
+  },
+  "Resources" : {
+    "SgUtilities" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcAdmin" },
+        "GroupDescription" : "Enable SSH access via port 22",
+        "SecurityGroupIngress" : [
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 22,
+          "ToPort" : 22,
+          "SourceSecurityGroupId" : { "Fn::Select": [ "0", { "Ref" : "BastionSecGroup" } ] }
+        },
+        {
+          "IpProtocol" : "icmp",
+          "FromPort" : -1,
+          "ToPort" : -1,
+          "CidrIp" : { "Ref" : "VpcAdminCidr" }
+        } ],
+        "SecurityGroupEgress" : [
+        {
+          "IpProtocol" : "-1",
+          "FromPort" : -1,
+          "ToPort" : -1,
+          "CidrIp" : { "Ref" : "VpcAdminCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 80,
+          "ToPort" : 80,
+          "CidrIp" : "0.0.0.0/0"
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 443,
+          "ToPort" : 443,
+          "CidrIp" : "0.0.0.0/0"
+        } ],
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-sg-utility1" } ]
+      }
+    },
+    "UtilityServer1" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "Amis", { "Ref" : "AWS::Region" }, "utility" ] },
+        "InstanceInitiatedShutdownBehavior" : "stop",
+        "InstanceType" : "t2.micro",
+        "KeyName" : { "Ref" : "KeyPair" },
+        "SecurityGroupIds" : [ { "Ref" : "SgUtilities" } ],
+        "SourceDestCheck" : true,
+        "SubnetId" : { "Ref" : "SubnetUtilsA" },
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-ec2-utility-1a" } ]
+      },
+      "DependsOn" : [ "SgUtilities" ]
+    }
+  },
+  "Outputs" : {
+    "UtilityServer1Id" : {
+      "Description" : "Utility Server 1 - ID",
+      "Value" : { "Ref" : "UtilityServer1" }
+    },
+    "UtilityServer1Ip" : {
+      "Description" : "Utility Server 1 - IP",
+      "Value" :  { "Fn::GetAtt":  [ "UtilityServer1", "PrivateIp" ] }
+    },
+    "UtilitiesSecGroup" : {
+      "Description" : "Utility Servers Security Group",
+      "Value" : { "Ref" : "SgUtilities" }
+    }
+  }
+}

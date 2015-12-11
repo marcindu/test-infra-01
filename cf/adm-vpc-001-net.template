@@ -1,0 +1,183 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Admin VPC - network components",
+  "Parameters" : {
+    "Environment" : {
+      "Description" : "Type of environment",
+      "Type" : "String",
+      "AllowedValues" : [ "qa", "prod" ],
+      "Default" : "qa"
+    }
+  },
+  "Mappings" : {
+    "CidrBlocks" : {
+      "qa" : {
+        "AllVpc" : "10.13.113.0/24",
+        "BastionA" : "10.13.113.32/27",
+        "BastionB" : "10.13.113.160/27",
+        "JenkinsA" : "10.13.113.64/27",
+        "JenkinsB" : "10.13.113.192/27",
+        "UtilsA" : "10.13.113.96/27",
+        "UtilsB" : "10.13.113.224/27"
+      },
+      "prod" : {
+        "AllVpc" : "10.15.0.0/16",
+        "BastionA" : "10.15.1.16/24",
+        "BastionB" : "10.15.129.144/24",
+        "JenkinsA" : "10.15.2.32/24",
+        "JenkinsB" : "10.15.130.160/24",
+        "UtilsA" : "10.15.3.48/24",
+        "UtilsB" : "10.15.131.176/24"
+      }
+    }
+  },
+  "Resources" : {
+    "VpcAdmin" : {
+      "Type" : "AWS::EC2::VPC",
+      "Properties" : {
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "AllVpc" ] },
+        "EnableDnsSupport" : true,
+        "EnableDnsHostnames" : true,
+        "InstanceTenancy" : "default",
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-vpc-admin"
+        } ]
+      }
+    },
+    "IgwAdmin" : {
+      "Type" : "AWS::EC2::InternetGateway",
+      "Properties" : {
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-igw-primary"
+        } ]
+      }
+    },
+    "VGWA4D1A5" : {
+      "Type" : "AWS::EC2::VPCGatewayAttachment",
+      "Properties" : {
+        "InternetGatewayId" : { "Ref" : "IgwAdmin" },
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      }
+    },
+    "SubnetBastion1a" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "BastionA" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-sub-bastion-1a"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    },
+    "SubnetBastion1b" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : {
+          "Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
+        },
+        "CidrBlock" : {
+          "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "BastionB" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-sub-bastion-1b"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    },
+    "SubnetJenkins1a" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "JenkinsA" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-sub-jenkins-1a"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    },
+    "SubnetJenkins1b" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : { "Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "JenkinsB" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-sub-jenkins-1b"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    },
+    "SubnetUtils1a" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : { "Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "UtilsA" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name",
+          "Value" : "adm-sub-utils-1a"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    },
+    "SubnetUtils1b" : {
+      "Type" : "AWS::EC2::Subnet",
+      "Properties" : {
+        "AvailabilityZone" : { "Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ] },
+        "CidrBlock" : { "Fn::FindInMap" : [ "CidrBlocks", { "Ref" : "Environment" }, "UtilsB" ] },
+        "MapPublicIpOnLaunch" : true,
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-sub-utils-1b"
+        } ],
+        "VpcId" : { "Ref" : "VpcAdmin" }
+      },
+      "DependsOn" : [ "VpcAdmin" ]
+    }
+  },
+  "Outputs" : {
+    "CloudId" : {
+      "Description" : "Admin VPC ID",
+      "Value" : { "Ref" : "VpcAdmin" }
+    },
+    "CloudIpRange" : {
+      "Description" : "VPC's CIDR Block",
+      "Value" : { "Fn::GetAtt" : [ "VpcAdmin", "CidrBlock" ] }
+    },
+    "Igw" : {
+      "Description" : "Internet Gateway",
+      "Value" : { "Ref" : "IgwAdmin" }
+    },
+    "BastionSubnetA" : {
+      "Description" : "Subnet holding bastion host A",
+      "Value" : { "Ref" : "SubnetBastion1a" }
+    },
+    "BastionSubnetB" : {
+      "Description" : "Subnet holding bastion host B",
+      "Value" : { "Ref" : "SubnetBastion1b" }
+    },
+    "JenkinsSubnetA" : {
+      "Description" : "Subnet holding Jenkins servers A",
+      "Value" : { "Ref" : "SubnetJenkins1a" }
+    },
+    "JenkinsSubnetB" : {
+      "Description" : "Subnet holding Jenkins servers B",
+      "Value" : { "Ref" : "SubnetJenkins1b" }
+    },
+    "SubnetUtilsA" : {
+      "Description" : "Subnet holding utilities servers A",
+      "Value" : { "Ref" : "SubnetUtils1a" }
+    },
+    "SubnetUtilsB" : {
+      "Description" : "Subnet holding utilities servers B",
+      "Value" : { "Ref" : "SubnetUtils1b" }
+    }
+  }
+}

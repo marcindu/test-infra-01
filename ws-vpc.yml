@@ -1,4 +1,11 @@
 # VPC for workspaces
+# =================================================
+# To create use command:
+#  ~$ ansible-playbook ws-vpc.yml
+#
+# To remove the stack:
+#  ~$ ansible-playbook ws-vpc.yml -e action=absent
+#
 
 ---
 - hosts: localhost
@@ -6,17 +13,16 @@
   gather_facts: false
   any_errors_fatal: true
 
-  vars:
-    env: qa
-  
+
   vars_files:
+    - vars/var_general.yml
     - vars/var_workspaces.yml
-  
+    
     
   tasks:
     - name: VPC for Work Spaces
       cloudformation:
-        state: present
+        state: "{{ action | default('present') }}"
         stack_name: WorkSpaces-VPC
         region: "{{ aws_region }}"
         template: cf/workspaces-aws-net.template

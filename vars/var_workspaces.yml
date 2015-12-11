@@ -1,5 +1,5 @@
 ---
-aws_region: eu-central-1
+
 admin_vpc_id: vpc-0f1bb066
 admin_vpc_cidr: 172.16.0.0/20
 
