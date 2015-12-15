@@ -1,0 +1,25 @@
+# Run using command:
+#  ~$ ansible-playbook -i ec2.py ansible-playbook -i ec2.py
+
+
+---
+
+- name: Manage users
+  hosts: tag_aws_cloudformation_stack_name_Admin_VPC_Bastions
+  remote_user: ec2-user
+  sudo: yes
+  
+  
+  
+  tasks:
+  
+  - name: Create user
+    user:
+      name: marcindu
+      state: absent
+      remove: yes
+    
+  - name: Copy keys
+    copy: src="~/.ssh/marcindu-id-key.pub" dest="~/.ssh/marcindu-id-key.pub"
+    
+    
