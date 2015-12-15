@@ -1,6 +1,12 @@
-[bastions]
-52.29.229.92
-52.29.228.23
+[tag_aws_cloudformation_stack_name_Admin_VPC_Bastions]
+
+
+[bastions:children]
+tag_aws_cloudformation_stack_name_Admin_VPC_Bastions
+
+
+
+
 
 
 

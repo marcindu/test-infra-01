@@ -1,5 +1,9 @@
 # Gneral variables
 ---
 env: qa
-aws_region: eu-central-1
-key_pair: eu-central-1.admin
+#aws_region: eu-central-1
+#key_pair: eu-central-1.admin
+
+aws_region: us-east-1
+key_pair: us-east-1.admin
+
