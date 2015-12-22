@@ -6,9 +6,13 @@
       "Description": "VPC ID to create the directory in",
       "Type": "AWS::EC2::VPC::Id"
     },
-    "Subnets": {
-      "Description": "Two subnets hosting the Simple AD servers",
-      "Type": "List<AWS::EC2::Subnet::Id>"
+    "SubnetAz1": {
+      "Description": "Subnet hosting the Simple AD server in AZ-1",
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "SubnetAz2": {
+      "Description": "Subnet hosting the Simple AD server in AZ-2",
+      "Type": "AWS::EC2::Subnet::Id"
     },
     "DomainFqdn": {
       "Description": "Fully qualified domain name, e.g. corp.example.com",

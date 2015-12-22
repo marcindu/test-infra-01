@@ -21,7 +21,7 @@
   
   tasks:
   
-  - name: Admin VPC - network
+  - name: Admin VPC - Network
     cloudformation:
       state: "{{ action | default('present') }}"
       stack_name: Admin-VPC-Net
@@ -36,26 +36,36 @@
 
 
     
-  - name: Admin VPC - routing
+  - name: Admin VPC - Simple AD
     cloudformation:
       state: "{{ action | default('present') }}"
-      stack_name: Admin-VPC-Routing
+      stack_name: Admin-VPC-SimpleAD
       region: "{{ aws_region }}"
-      template: cf/adm-vpc-003-routing.template
+      template: cf/adm-vpc-002-simplead.template
       template_parameters:
-        VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
-        IgwAdmin:        "{{ adm_vpc_net.stack_outputs.Igw }}"
-        SubnetBastion1a: "{{ adm_vpc_net.stack_outputs.BastionSubnetA }}"
-        SubnetBastion1b: "{{ adm_vpc_net.stack_outputs.BastionSubnetB }}"
-        SubnetJenkins1a: "{{ adm_vpc_net.stack_outputs.JenkinsSubnetA }}"
-        SubnetJenkins1b: "{{ adm_vpc_net.stack_outputs.JenkinsSubnetB }}"
-        SubnetUtils1a:   "{{ adm_vpc_net.stack_outputs.SubnetUtilsA }}"
-        SubnetUtils1b:   "{{ adm_vpc_net.stack_outputs.SubnetUtilsB }}"
-    register: adm_vpc_routing
+        VpcId:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        SubnetAz1:    "{{ adm_vpc_net.stack_outputs.SubnetUtilsA }}"
+        SubnetAz1:    "{{ adm_vpc_net.stack_outputs.SubnetUtilsB }}"
+        DomainFqdn:   "{{ DomainFqdn }}"
+        DomainShort:  "{{ DomainShort }}"
+        AdPwd:        "{{ AdPwd }}"
+    register: adm_vpc_simplead
     
   - debug:
-      msg: "{{ adm_vpc_routing }}"
+      msg: "{{ adm_vpc_simplead }}"
 
+
+
+  - name: Admin VPC - Set DHCP
+    ec2_vpc_net:
+      cidr_block: "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+      state: "{{ action | default('present') }}"
+      region: "{{ aws_region }}"
+      dhcp_opts_id: "{{ adm_vpc_simplead.stack_outputs.DhcpOtions }}"
+      
+
+# ... until here there were fixes
+      
 
     
   - name: Admin VPC - Security Groups
@@ -65,8 +75,8 @@
       region: "{{ aws_region }}"
       template: cf/adm-vpc-004-secgrp.template
       template_parameters:
-        VpcId:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
-        VpcCidr:      "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+        VpcId:     "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        VpcCidr:   "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
     register: adm_vpc_secgrps
     
   - debug:
@@ -74,7 +84,7 @@
 
 
 
-  - name: Admin VPC - bastion hosts
+  - name: Admin VPC - Bastion Hosts
     cloudformation:
       state: "{{ action | default('present') }}"
       stack_name: Admin-VPC-Bastions
@@ -86,11 +96,13 @@
         SubnetBastion1a: "{{ adm_vpc_net.stack_outputs.BastionSubnetA }}"
         SubnetBastion1b: "{{ adm_vpc_net.stack_outputs.BastionSubnetB }}"
         KeyPair:         "{{ key_pair }}"
+        SecGroups:
+          - "{{ adm_vpc_secgrps.stack_outputs.LdapSecGroup }}"
+          - "{{ adm_vpc_secgrps.stack_outputs.BastionSecGroup }}"
     register: adm_vpc_bastions
     
   - debug:
       msg: "{{ adm_vpc_bastions }}"
-
 
 
   - name: Admin VPC - utility server 1
