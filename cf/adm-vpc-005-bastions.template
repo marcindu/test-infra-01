@@ -22,6 +22,10 @@
       "Description": "VPC CIDR Block",
       "Type": "String",
       "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    },
+    "SecGroups": {
+      "Description": "Security groups",
+      "Type": "List<AWS::EC2::SecurityGroup::Id>"
     }
   },
   "Mappings": {
@@ -33,32 +37,6 @@
     }
   },
   "Resources": {
-    "SgBastions" : {
-      "Type" : "AWS::EC2::SecurityGroup",
-      "Properties" : {
-        "VpcId" : { "Ref" : "VpcAdmin" },
-        "GroupDescription" : "Enable SSH access via port 22",
-        "SecurityGroupIngress" : [ {
-          "IpProtocol" : "tcp",
-          "FromPort" : "22",
-          "ToPort" : "22",
-          "CidrIp" : "145.247.13.164/32"
-        } ],
-        "SecurityGroupIngress" : [ {
-          "IpProtocol" : "tcp",
-          "FromPort" : "22",
-          "ToPort" : "22",
-          "CidrIp" : "145.247.134.144/32"
-        } ],
-        "SecurityGroupEgress" : [ {
-          "IpProtocol" : "tcp",
-          "FromPort" : "22",
-          "ToPort" : "22",
-          "CidrIp" : { "Ref" : "VpcAdminCidr" }
-        } ],
-        "Tags" : [ { "Key" : "Name", "Value" : "adm-sg-bastion" } ]
-      }
-    },
     "BastionHost1a": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
@@ -66,12 +44,11 @@
         "InstanceInitiatedShutdownBehavior": "stop",
         "InstanceType": "t2.micro",
         "KeyName": { "Ref": "KeyPair" },
-        "SecurityGroupIds": [ { "Ref": "SgBastions" } ],
+        "SecurityGroupIds": { "Ref": "SecGroups" },
         "SourceDestCheck": true,
         "SubnetId": { "Ref": "SubnetBastion1a" },
         "Tags": [ { "Key": "Name", "Value": "adm-ec2-bastion-1a" } ]
-      },
-      "DependsOn" : [ "SgBastions" ]
+      }
     },
     "BastionHost1b": {
       "Type": "AWS::EC2::Instance",
@@ -80,12 +57,11 @@
         "InstanceInitiatedShutdownBehavior": "stop",
         "InstanceType": "t2.micro",
         "KeyName": { "Ref": "KeyPair" },
-        "SecurityGroupIds": [ { "Ref": "SgBastions" } ],
+        "SecurityGroupIds": { "Ref": "SecGroups" },
         "SourceDestCheck": true,
         "SubnetId": { "Ref": "SubnetBastion1b" },
         "Tags": [ { "Key": "Name", "Value": "adm-ec2-bastion-1b" } ]
-      },
-      "DependsOn" : [ "SgBastions" ]
+      }
     }
   },
   "Outputs": {
@@ -104,10 +80,6 @@
     "Bastion1bIP" : {
       "Description" : "Bastion Host 1b - Public IP Address",
       "Value": { "Fn::GetAtt" : [ "BastionHost1b", "PublicIp" ] }
-    },
-    "BastionSecGroup" : {
-      "Description" : "Bastion Hosts Security Group",
-      "Value" : { "Ref" : "SgBastions" }
     }
   }
 }

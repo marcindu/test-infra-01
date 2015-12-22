@@ -41,7 +41,7 @@
       state: "{{ action | default('present') }}"
       stack_name: Admin-VPC-Routing
       region: "{{ aws_region }}"
-      template: cf/adm-vpc-002-routing.template
+      template: cf/adm-vpc-003-routing.template
       template_parameters:
         VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
         IgwAdmin:        "{{ adm_vpc_net.stack_outputs.Igw }}"
@@ -57,13 +57,29 @@
       msg: "{{ adm_vpc_routing }}"
 
 
+    
+  - name: Admin VPC - Security Groups
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-SecGroups
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-004-secgrp.template
+      template_parameters:
+        VpcId:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        VpcCidr:      "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+    register: adm_vpc_secgrps
+    
+  - debug:
+      msg: "{{ adm_vpc_secgrps }}"
+
+
 
   - name: Admin VPC - bastion hosts
     cloudformation:
       state: "{{ action | default('present') }}"
       stack_name: Admin-VPC-Bastions
       region: "{{ aws_region }}"
-      template: cf/adm-vpc-003-bastions.template
+      template: cf/adm-vpc-005-bastions.template
       template_parameters:
         VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
         VpcAdminCidr:    "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
@@ -82,7 +98,7 @@
       state: "{{ action | default('present') }}"
       stack_name: Admin-VPC-Utility1
       region: "{{ aws_region }}"
-      template: cf/adm-vpc-004-util1.template
+      template: cf/adm-vpc-006-util1.template
       template_parameters:
         VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
         VpcAdminCidr:    "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
@@ -93,6 +109,25 @@
     
   - debug:
       msg: "{{ adm_vpc_util1 }}"
+
+
+
+  - name: Admin VPC - Windows Server 01
+    cloudformation:
+      state: "{{ action | default('present') }}"
+      stack_name: Admin-VPC-Windows01
+      region: "{{ aws_region }}"
+      template: cf/adm-vpc-007-win-1.template
+      template_parameters:
+        VpcAdmin:        "{{ adm_vpc_net.stack_outputs.CloudId }}"
+        VpcAdminCidr:    "{{ adm_vpc_net.stack_outputs.CloudIpRange }}"
+        SubnetWin01:     "{{ adm_vpc_net.stack_outputs.SubnetUtilsB }}"
+        SecGrpBastions:  "{{ adm_vpc_bastions.stack_outputs.BastionSecGroup }}"
+        KeyPair:         "{{ key_pair }}"
+    register: adm_vpc_win1
+    
+  - debug:
+      msg: "{{ adm_vpc_win1 }}"
 
 
 

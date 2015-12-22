@@ -1,0 +1,112 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Admin VPC - Windows server",
+  "Parameters" : {
+    "VpcAdmin" : {
+      "Description" : "VPC to contain the security group",
+      "Type" : "AWS::EC2::VPC::Id"
+    },
+    "VpcAdminCidr" : {
+      "Description" : "VPC CIDR Block",
+      "Type" : "String",
+      "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    },
+    "SubnetWin01" : {
+      "Description" : "Subnet for Windows server 01",
+      "Type" : "AWS::EC2::Subnet::Id"
+    },
+    "SecGrpBastions" : {
+      "Description" : "Security group holding bastion hosts",
+      "Type" : "List<AWS::EC2::SecurityGroup::Id>"
+    }, 
+    "KeyPair" : {
+      "Description" : "Key pair to access instances",
+      "Type" : "AWS::EC2::KeyPair::KeyName"
+    }
+  },
+  "Mappings" : {
+    "Amis" : {
+      "eu-west-1":    { "windows" : "ami-8004dcf3" },
+      "eu-central-1": { "windows" : "ami-c9a9baa5" },
+      "us-east-1":    { "windows" : "ami-e171098b" },
+      "us-west-2":    { "windows" : "ami-56544537"}
+    }
+  },
+  "Resources" : {
+    "SgWindows" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcAdmin" },
+        "GroupDescription" : "Enable RDP from workstation",
+        "SecurityGroupIngress" : [
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 3389,
+          "ToPort" : 3389,
+          "CidrIp" : "80.50.54.226/32"
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 3389,
+          "ToPort" : 3389,
+          "SourceSecurityGroupId" : { "Fn::Select": [ "0", { "Ref" : "SecGrpBastions" } ] }
+        },        
+        {
+          "IpProtocol" : "icmp",
+          "FromPort" : -1,
+          "ToPort" : -1,
+          "CidrIp" : { "Ref" : "VpcAdminCidr" }
+        } ],
+        "SecurityGroupEgress" : [
+        {
+          "IpProtocol" : "-1",
+          "FromPort" : -1,
+          "ToPort" : -1,
+          "CidrIp" : { "Ref" : "VpcAdminCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 80,
+          "ToPort" : 80,
+          "CidrIp" : "0.0.0.0/0"
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 443,
+          "ToPort" : 443,
+          "CidrIp" : "0.0.0.0/0"
+        } ],
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-sg-windows" } ]
+      }
+    },
+    "WindowsServer01" : {
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : { "Fn::FindInMap" : [ "Amis", { "Ref" : "AWS::Region" }, "windows" ] },
+        "InstanceInitiatedShutdownBehavior" : "stop",
+        "InstanceType" : "t2.micro",
+        "KeyName" : { "Ref" : "KeyPair" },
+        "SecurityGroupIds" : [ { "Ref" : "SgWindows" } ],
+        "SourceDestCheck" : true,
+        "SubnetId" : { "Ref" : "SubnetWin01" },
+        "IamInstanceProfile" : "ds-ec2-role",
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-ec2-windows-01" } ]
+      },
+      "DependsOn" : [ "SgWindows" ]
+    }
+  },
+  "Outputs" : {
+    "WindowsServer01Id" : {
+      "Description" : "Windows Server 01 - ID",
+      "Value" : { "Ref" : "WindowsServer01" }
+    },
+    "WindowsServer01Ip" : {
+      "Description" : "Windows Server 01 - IP",
+      "Value" :  { "Fn::GetAtt":  [ "WindowsServer01", "PrivateIp" ] }
+    },
+    "WindowsSecGroup" : {
+      "Description" : "Utility Servers Security Group",
+      "Value" : { "Ref" : "SgWindows" }
+    }
+  }
+}

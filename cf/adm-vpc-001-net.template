@@ -140,6 +140,72 @@
         "VpcId" : { "Ref" : "VpcAdmin" }
       },
       "DependsOn" : [ "VpcAdmin" ]
+    },
+    "RTableApp" : {
+      "Type" : "AWS::EC2::RouteTable",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcAdmin" },
+        "Tags" : [ {
+          "Key" : "Name", "Value" : "adm-rtb-app"
+        } ]
+      }
+    },
+    "RTE47LGG" : {
+      "Type" : "AWS::EC2::Route",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "DestinationCidrBlock" : "0.0.0.0/0",
+        "GatewayId" : { "Ref" : "IgwAdmin" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Bastion1a" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetBastion1a" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Bastion1b" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetBastion1b" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Jenkins1a" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetJenkins1a" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Jenkins1b" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetJenkins1b" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Utils1a" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetUtils1a" }
+      },
+      "DependsOn" : [ "RTableApp" ]
+    },
+    "SrtaRtb1Utils1b" : {
+      "Type" : "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties" : {
+        "RouteTableId" : { "Ref" : "RTableApp" },
+        "SubnetId" : { "Ref" : "SubnetUtils1b" }
+      },
+      "DependsOn" : [ "RTableApp" ]
     }
   },
   "Outputs" : {

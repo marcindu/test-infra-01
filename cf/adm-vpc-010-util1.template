@@ -46,6 +46,12 @@
           "SourceSecurityGroupId" : { "Fn::Select": [ "0", { "Ref" : "BastionSecGroup" } ] }
         },
         {
+          "IpProtocol" : "tcp",
+          "FromPort" : 3389,
+          "ToPort" : 3389,
+          "SourceSecurityGroupId" : { "Fn::Select": [ "0", { "Ref" : "BastionSecGroup" } ] }
+        },        
+        {
           "IpProtocol" : "icmp",
           "FromPort" : -1,
           "ToPort" : -1,

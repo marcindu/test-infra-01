@@ -1,0 +1,180 @@
+{
+  "AWSTemplateFormatVersion" : "2010-09-09",
+  "Description" : "Admin VPC - core security groups",
+  "Parameters" : {
+    "VpcId" : {
+      "Description" : "VPC to contain the security group",
+      "Type" : "AWS::EC2::VPC::Id"
+    },
+    "VpcCidr" : {
+      "Description" : "VPC CIDR Block",
+      "Type" : "String",
+      "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
+    }
+  },
+  "Resources" : {
+    "SgLdap" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable LDAP related traffic",
+        "SecurityGroupEgress" : [
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 53,
+          "ToPort" : 53,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 53,
+          "ToPort" : 53,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 88,
+          "ToPort" : 88,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 88,
+          "ToPort" : 88,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 123,
+          "ToPort" : 123,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 135,
+          "ToPort" : 135,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 137,
+          "ToPort" : 138,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 139,
+          "ToPort" : 139,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 389,
+          "ToPort" : 389,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 389,
+          "ToPort" : 389,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 445,
+          "ToPort" : 445,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 445,
+          "ToPort" : 445,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 873,
+          "ToPort" : 873,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 3268,
+          "ToPort" : 3268,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "tcp",
+          "FromPort" : 1024,
+          "ToPort" : 65535,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        },
+        {
+          "IpProtocol" : "udp",
+          "FromPort" : 1024,
+          "ToPort" : 65535,
+          "CidrIp" : { "Ref" : "VpcCidr" }
+        } ],
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-sg-ldap" } ]
+      }
+    },
+    "SgBastions" : {
+      "Type" : "AWS::EC2::SecurityGroup",
+      "Properties" : {
+        "VpcId" : { "Ref" : "VpcId" },
+        "GroupDescription" : "Enable SSH and RDP access",
+        "SecurityGroupIngress" : [
+          {
+            "IpProtocol" : "tcp",
+            "FromPort" : "22",
+            "ToPort" : "22",
+            "CidrIp" : "80.50.54.226/32"
+          },
+          {
+            "IpProtocol" : "tcp",
+            "FromPort" : "3389",
+            "ToPort" : "3389",
+            "CidrIp" : "80.50.54.226/32"
+          }
+        ],
+        "SecurityGroupEgress" : [
+          {
+          "IpProtocol" : "tcp",
+          "FromPort" : "22",
+          "ToPort" : "22",
+          "CidrIp" : { "Ref" : "VpcCidr" }
+          },
+          {
+          "IpProtocol" : "tcp",
+          "FromPort" : "3389",
+          "ToPort" : "3389",
+          "CidrIp" : { "Ref" : "VpcCidr" }
+          },
+          {
+          "IpProtocol" : "tcp",
+          "FromPort" : "80",
+          "ToPort" : "80",
+          "CidrIp" : "0.0.0.0/0"
+          },
+          {
+          "IpProtocol" : "tcp",
+          "FromPort" : "443",
+          "ToPort" : "443",
+          "CidrIp" : "0.0.0.0/0"
+          }
+        ],
+        "Tags" : [ { "Key" : "Name", "Value" : "adm-sg-bastion" } ]
+      }
+    }    
+  },
+  "Outputs" : {
+    "LdapSecGroup" : {
+      "Description" : "Security Group for LDAP services ",
+      "Value" : { "Ref" : "SgLdap" }
+    },
+    "BastionSecGroup" : {
+      "Description" : "Security Group for bastion servers ",
+      "Value" : { "Ref" : "SgBastions" }
+    }
+  }
+}

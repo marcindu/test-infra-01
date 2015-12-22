@@ -1,0 +1,64 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Admin VPC - Simple AD",
+  "Parameters": {
+    "VpcId": {
+      "Description": "VPC ID to create the directory in",
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "Subnets": {
+      "Description": "Two subnets hosting the Simple AD servers",
+      "Type": "List<AWS::EC2::Subnet::Id>"
+    },
+    "DomainFqdn": {
+      "Description": "Fully qualified domain name, e.g. corp.example.com",
+      "Type": "String"
+    },
+    "DomainShort": {
+      "Description": "Domain short name, e.g. CORP",
+      "Type": "String"
+    },
+    "AdPwd": {
+      "Description": "Password for Adiministrator account to manage Directory",
+      "Type": "String",
+      "MinLength": 6,
+      "MaxLength": 15,
+      "NoEcho": true
+    }
+  },
+  "Resources": {
+    "DirAdmin": {
+      "Type": "AWS::DirectoryService::SimpleAD",
+      "Properties": {
+        "Description": "Directory for Admin VPC",
+        "Name": { "Ref": "DomainFqdn" },
+        "ShortName": { "Ref": "DomainShort" },
+        "Size": "Small",
+        "Password": { "Ref": "AdPwd" },
+        "VpcSettings": {
+          "VpcId": { "Ref": "VpcId" },
+          "SubnetIds": { "Ref": "Subnets" }
+        }
+      }
+    },
+    "DhcpOtions": {
+      "Type": "AWS::EC2::DHCPOptions",
+      "Properties": {
+        "DomainName": { "Ref": "DomainFqdn" },
+        "DomainNameServers": { "Fn::GetAtt": [ "DirAdmin", "DnsIpAddresses" ] },
+        "Tags": [ { "Key": "Name", "Value": "adm-dhcp" } ]
+      },
+      "DependsOn": [ "DirAdmin" ]
+    }
+  },
+  "Outputs": {
+    "SimpleAd": {
+      "Description": "Simple Directory",
+      "Value": { "Ref": "DirAdmin" }
+    },
+    "DhcpOtions": {
+      "Description": "DHCP Options Set",
+      "Value": { "Ref": "DhcpOtions" }
+    }
+  }
+}
