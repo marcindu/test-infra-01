@@ -1,0 +1,125 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description" : "Admin VPC in the whole SFR cloud infrastructure",
+  "Parameters": {
+    "Environment": {
+      "Description": "Type of environment",
+      "Type": "String",
+      "AllowedValues": [ "qa", "prod" ],
+      "Default": "qa"
+    },
+    "DomainFqdn": {
+      "Description": "Fully qualified domain name, e.g. corp.example.com",
+      "Type": "String"
+    },
+    "DomainShort": {
+      "Description": "Domain short name, e.g. CORP",
+      "Type": "String"
+    },
+    "AdPwd": {
+      "Description": "Password for Adiministrator account to manage Directory",
+      "Type": "String",
+      "MinLength": 6,
+      "MaxLength": 15,
+      "NoEcho": true
+    },
+    "KeyPair": {
+      "Description": "Key pair for acciessing instances",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    },
+    "HostedZone": {
+      "Description": "Hosted Zone in Route 53",
+      "Type": "String",
+      "Default": "ckaws.net"
+    }
+  },
+  "Resources": {
+    "StckNet": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": { "Environment": { "Ref": "Environment" } },
+        "TemplateURL": "https://s3-eu-west-1.amazonaws.com/sfr-qa-cloudformation/adm-vpc/adm-vpc-001-net.template",
+        "TimeoutInMinutes": "20"
+      }
+    },
+    "StckSimpleAd": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "VpcId": { "Fn::GetAtt": [ "StckNet", "Outputs.CloudId" ] },
+          "SubnetAz1": { "Fn::GetAtt": [ "StckNet", "Outputs.SubnetUtilsA" ] },
+          "SubnetAz2": { "Fn::GetAtt": [ "StckNet", "Outputs.SubnetUtilsB" ] },
+          "DomainFqdn": { "Ref": "DomainFqdn" },
+          "DomainShort": { "Ref": "DomainShort" },
+          "AdPwd": { "Ref": "AdPwd" }
+        },
+        "TemplateURL": "https://s3-eu-west-1.amazonaws.com/sfr-qa-cloudformation/adm-vpc/adm-vpc-002-simplead.template",
+        "TimeoutInMinutes": "20"
+      }
+    },
+    "StckSecGrp": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "VpcId": { "Fn::GetAtt": [ "StckNet", "Outputs.CloudId" ] },
+          "VpcCidr": { "Fn::GetAtt": [ "StckNet", "Outputs.CloudIpRange" ] }
+        },
+        "TemplateURL": "https://s3-eu-west-1.amazonaws.com/sfr-qa-cloudformation/adm-vpc/adm-vpc-004-secgrp.template",
+        "TimeoutInMinutes": "20"
+      },
+      "DependsOn": [ "StckNet" ]
+    },
+    "StckBastions": {
+      "Type": "AWS::CloudFormation::Stack",
+      "Properties": {
+        "Parameters": {
+          "SubnetBastion1a": { "Fn::GetAtt": [ "StckNet", "Outputs.BastionSubnetA" ] },
+          "SubnetBastion1b": { "Fn::GetAtt": [ "StckNet", "Outputs.BastionSubnetB" ] },
+          "KeyPair": { "Ref" : "KeyPair" },
+          "SecGroups": { "Fn::Join": [ ",", [
+            { "Fn::GetAtt": [ "StckSecGrp", "Outputs.LdapSecGroup" ] },
+            { "Fn::GetAtt": [ "StckSecGrp", "Outputs.BastionSecGroup" ] }
+          ] ] },
+          "HostedZone": { "Ref": "HostedZone" }
+        },
+        "TemplateURL": "https://s3-eu-west-1.amazonaws.com/sfr-qa-cloudformation/adm-vpc/adm-vpc-005-bastions.template",
+        "TimeoutInMinutes": "20"
+      },
+      "DependsOn": [ "StckNet" ]
+    }
+  },
+  "Outputs" : {
+    "VpcId" : {
+      "Description" : "Administrative VPC ID",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.CloudId" ] }
+    },
+    "VpcCidr" : {
+      "Description" : "Administrative VPC CIDR block",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.CloudIpRange" ] }
+    },
+    "JenkinsSubnetA" : {
+      "Description" : "Subnet holding Jenkins servers A",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.JenkinsSubnetA" ] }
+    },
+    "JenkinsSubnetB" : {
+      "Description" : "Subnet holding Jenkins servers B",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.JenkinsSubnetB" ] }
+    },
+    "SubnetUtilsA" : {
+      "Description" : "Subnet holding utilities servers A",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.SubnetUtilsA" ] }
+    },
+    "SubnetUtilsB" : {
+      "Description" : "Subnet holding utilities servers B",
+      "Value" : { "Fn::GetAtt": [ "StckNet", "Outputs.SubnetUtilsB" ] }
+    },
+    "LdapSecGroup" : {
+      "Description" : "Bastion Hosts Security Group",
+      "Value" : { "Fn::GetAtt": [ "StckSecGrp", "Outputs.LdapSecGroup" ] }
+    },
+    "BastionSecGroup" : {
+      "Description" : "Bastion Hosts Security Group",
+      "Value" : { "Fn::GetAtt": [ "StckSecGrp", "Outputs.BastionSecGroup" ] }
+    }
+  }
+}

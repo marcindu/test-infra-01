@@ -14,72 +14,101 @@
       "Description": "Key pair to access instances",
       "Type": "AWS::EC2::KeyPair::KeyName"
     },
-    "VpcAdmin": {
-      "Description": "VPC to contain the security group",
-      "Type": "AWS::EC2::VPC::Id"
-    },
-    "VpcAdminCidr": {
-      "Description": "VPC CIDR Block",
-      "Type": "String",
-      "AllowedPattern" : "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/([0-9]|[1-2][0-9]|3[0-2]))$"
-    },
     "SecGroups": {
-      "Description": "Security groups",
-      "Type": "List<AWS::EC2::SecurityGroup::Id>"
+      "Description": "Security Groups",
+      "Type": "CommaDelimitedList"
+    },
+    "HostedZone": {
+      "Description": "Hosted zone name in Route 53",
+      "Type": "String"
     }
   },
   "Mappings": {
     "Amis": {
-      "eu-west-1": { "bastion": "ami-25158352" },
-      "eu-central-1": { "bastion": "ami-dafdcfc7" },
-      "us-east-1": { "bastion": "ami-12663b7a" },
-      "us-west-2": { "bastion": "ami-4dbf9e7d" }
+      "eu-west-1":    { "linux": "ami-25158352", "windows": "ami-1ffa5a6c" },
+      "eu-central-1": { "linux": "ami-dafdcfc7", "windows": "ami-c64559aa" },
+      "us-east-1":    { "linux": "ami-12663b7a", "windows": "ami-e4034a8e" },
+      "us-west-2":    { "linux": "ami-4dbf9e7d", "windows": "ami-b25e42d3" }
     }
   },
   "Resources": {
     "BastionHost1a": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
-        "ImageId": { "Fn::FindInMap": [ "Amis", { "Ref": "AWS::Region" }, "bastion" ] },
+        "ImageId": { "Fn::FindInMap": [ "Amis", { "Ref": "AWS::Region" }, "linux" ] },
         "InstanceInitiatedShutdownBehavior": "stop",
         "InstanceType": "t2.micro",
         "KeyName": { "Ref": "KeyPair" },
         "SecurityGroupIds": { "Ref": "SecGroups" },
         "SourceDestCheck": true,
         "SubnetId": { "Ref": "SubnetBastion1a" },
-        "Tags": [ { "Key": "Name", "Value": "adm-ec2-bastion-1a" } ]
+        "Tags": [
+          { "Key": "Name", "Value": "adm-ec2-bastion-lin-1a" },
+          { "Key": "OS", "Value": "RHEL7" }
+        ]
+      }
+    },
+    "Bastion1aDns": {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : { "Fn::Join": [ "", [ { "Ref": "HostedZone" }, "." ] ] },
+        "Type": "A",
+        "TTL": "300",
+        "Name": { "Fn::Join": [ "", [ "bastion-lnx.", { "Ref": "HostedZone" }, "." ] ] },
+        "ResourceRecords": [ { "Fn::GetAtt": [ "BastionHost1a", "PublicIp" ] } ]
       }
     },
     "BastionHost1b": {
       "Type": "AWS::EC2::Instance",
       "Properties": {
-        "ImageId": { "Fn::FindInMap": [ "Amis", { "Ref": "AWS::Region" }, "bastion" ] },
+        "ImageId": { "Fn::FindInMap": [ "Amis", { "Ref": "AWS::Region" }, "windows" ] },
         "InstanceInitiatedShutdownBehavior": "stop",
         "InstanceType": "t2.micro",
         "KeyName": { "Ref": "KeyPair" },
         "SecurityGroupIds": { "Ref": "SecGroups" },
         "SourceDestCheck": true,
         "SubnetId": { "Ref": "SubnetBastion1b" },
-        "Tags": [ { "Key": "Name", "Value": "adm-ec2-bastion-1b" } ]
+        "Tags": [
+          { "Key": "Name", "Value": "adm-ec2-bastion-win-1b" },
+          { "Key": "OS", "Value": "Win2012R2" }
+        ]
+      }
+    },
+    "Bastion1bDns": {
+      "Type" : "AWS::Route53::RecordSet",
+      "Properties" : {
+        "HostedZoneName" : { "Fn::Join": [ "", [ { "Ref": "HostedZone" }, "." ] ] },
+        "Type": "A",
+        "TTL": "300",
+        "Name": { "Fn::Join": [ "", [ "bastion-win.", { "Ref": "HostedZone" }, "." ] ] },
+        "ResourceRecords": [ { "Fn::GetAtt": [ "BastionHost1b", "PublicIp" ] } ]
       }
     }
   },
   "Outputs": {
-    "Bastion1a" : {
-      "Description" : "Bastion Host 1a - ID",
+    "BastionLnx" : {
+      "Description" : "Bastion Host Linux - ID",
       "Value": { "Ref" : "BastionHost1a" }
     },
-    "Bastion1aIP" : {
-      "Description" : "Bastion Host 1a - Public IP Address",
+    "BastionLnxIP" : {
+      "Description" : "Bastion Host Linux - Public IP Address",
       "Value": { "Fn::GetAtt" : [ "BastionHost1a", "PublicIp" ] }
     },
-    "Bastion1b" : {
-      "Description" : "Bastion Host 1b - ID",
+    "BastionLnxDns" : {
+      "Description" : "Bastion Host Linux - Public DNS Name",
+      "Value": { "Ref" : "Bastion1aDns" }
+    },
+    "BastionWin" : {
+      "Description" : "Bastion Host Windows - ID",
       "Value": { "Ref" : "BastionHost1b" }
     },
-    "Bastion1bIP" : {
-      "Description" : "Bastion Host 1b - Public IP Address",
+    "BastionWinIP" : {
+      "Description" : "Bastion Host Windows - Public IP Address",
       "Value": { "Fn::GetAtt" : [ "BastionHost1b", "PublicIp" ] }
+    },
+    "BastionWinDns" : {
+      "Description" : "Bastion Host Windows - Public DNS Name",
+      "Value": { "Ref" : "Bastion1bDns" }
     }
   }
 }

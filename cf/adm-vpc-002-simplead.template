@@ -41,7 +41,7 @@
         "Password": { "Ref": "AdPwd" },
         "VpcSettings": {
           "VpcId": { "Ref": "VpcId" },
-          "SubnetIds": { "Ref": "Subnets" }
+          "SubnetIds": [ { "Ref": "SubnetAz1" }, { "Ref": "SubnetAz2" } ]
         }
       }
     },

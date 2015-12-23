@@ -5,7 +5,7 @@
     "Environment" : {
       "Description" : "Type of environment",
       "Type" : "String",
-      "AllowedValues" : [ "qa", "prod" ],
+      "AllowedValues" : [ "qa", "prd" ],
       "Default" : "qa"
     }
   },
